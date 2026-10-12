@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Split Bill</title>
+<style>
+/* ─── CSS Custom Properties ─────────────────────────────────────── */
+:root {
+  --bg:        #ffffff;
+  --surface:   #f7f8fa;
+  --border:    #e5e7eb;
+  --text:      #1f2328;
+  --muted:     #57606a;
+  --accent:    #3b82d4;
+  --danger:    #d73a49;
+  --success:   #1a7f37;
+  --warn-bg:   #fff8e1;
+  --warn-border:#f0c040;
+  --radius:    10px;
+  --shadow:    0 1px 4px rgba(0,0,0,.08);
+  --max-w:     640px;
+  --font:      -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+a { color: var(--accent); }
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; font-size: 16px; }
+
+/* ─── Layout ────────────────────────────────────────────────────── */
+.container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  position: sticky; top: 0; z-index: 100;
+}
+header .container { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.app-title { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+.live-total {
+  font-size: 0.88rem; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 12px; white-space: nowrap;
+}
+.live-total strong { color: var(--accent); }
+
+/* ─── Tabs / Stepper ────────────────────────────────────────────── */
+.tabs {
+  display: flex; overflow-x: auto; gap: 0;
+  background: var(--bg); border-bottom: 2px solid var(--border);
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1 0 auto; min-width: 64px;
+  padding: 10px 8px; border: none; background: transparent;
+  font-size: 0.78rem; font-weight: 600; color: var(--muted);
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ─── Sections ──────────────────────────────────────────────────── */
+.section { display: none; padding: 20px 0; }
+.section.active { display: block; }
+
+/* ─── Card ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; }
+
+/* ─── Form helpers ──────────────────────────────────────────────── */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+.field input, .field select {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 16px; background: var(--bg); color: var(--text);
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,130,212,.15);
+}
+.field input[aria-invalid="true"] { border-color: var(--danger); }
+.field-err {
+  font-size: 0.8rem; color: var(--danger); margin-top: 4px;
+  display: none;
+}
+.field-err.show { display: block; }
+
+.row { display: flex; gap: 10px; }
+.row .field { flex: 1; }
+
+/* ─── Buttons ───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 18px; border-radius: 8px;
+  font-size: 0.9rem; font-weight: 600; border: none;
+  min-height: 44px; min-width: 44px; cursor: pointer;
+  transition: opacity .15s, background .15s;
+}
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { opacity: .88; }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: var(--border); }
+.btn-danger { background: #ffeef0; color: var(--danger); border: 1.5px solid #ffc5cb; }
+.btn-danger:hover:not(:disabled) { background: #ffd6da; }
+.btn-success { background: #e6f5ec; color: var(--success); border: 1.5px solid #b7dfc5; }
+.btn-success:hover:not(:disabled) { background: #cceedd; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; min-height: 36px; }
+.btn-icon { padding: 8px; border-radius: 8px; background: transparent; border: 1.5px solid var(--border); }
+.btn-icon:hover { background: var(--surface); }
+.btn-full { width: 100%; }
+
+/* ─── People list ───────────────────────────────────────────────── */
+.people-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.person-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border-radius: 8px; padding: 10px 12px;
+  border: 1px solid var(--border);
+}
+.person-name { font-weight: 600; }
+
+/* ─── Item list ─────────────────────────────────────────────────── */
+.item-list { display: flex; flex-direction: column; gap: 10px; }
+.item-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px;
+}
+.item-card.unassigned { border-color: var(--warn-border); background: var(--warn-bg); }
+.item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.item-name { font-weight: 700; font-size: 0.95rem; }
+.item-meta { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+.item-total { font-weight: 700; color: var(--accent); white-space: nowrap; }
+.item-actions { display: flex; gap: 6px; margin-top: 10px; }
+.unassigned-badge {
+  display: inline-block; background: var(--warn-border); color: #6b5000;
+  font-size: 0.75rem; font-weight: 700; border-radius: 4px;
+  padding: 2px 8px; margin-top: 6px;
+}
+
+/* ─── Assign section ────────────────────────────────────────────── */
+.assign-item {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+}
+.assign-item.unassigned { border-color: var(--danger); }
+.assign-item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.assign-item-name { font-weight: 700; }
+.assign-people { display: flex; flex-wrap: wrap; gap: 8px; }
+.assign-cb-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  font-size: 0.88rem; cursor: pointer; transition: background .12s, border-color .12s;
+  min-height: 44px;
+}
+.assign-cb-label:has(input:checked) {
+  background: #e8f0fd; border-color: var(--accent); color: var(--accent); font-weight: 600;
+}
+.assign-cb-label input { width: 0; height: 0; opacity: 0; position: absolute; }
+.assign-cb-label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.select-all-btn {
+  font-size: 0.8rem; padding: 5px 12px; min-height: 36px;
+  background: #e8f0fd; color: var(--accent); border: 1.5px solid var(--accent);
+  border-radius: 20px; font-weight: 600;
+}
+
+/* ─── Charges section ───────────────────────────────────────────── */
+.charges-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 400px) { .charges-grid { grid-template-columns: 1fr; } }
+.suffix-input { position: relative; }
+.suffix-input input { padding-right: 36px; }
+.suffix-input .suffix {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font-size: 0.9rem; pointer-events: none;
+}
+.discount-mode { display: flex; gap: 8px; margin-bottom: 10px; }
+.mode-btn {
+  flex: 1; padding: 8px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  font-size: 0.85rem; font-weight: 600; color: var(--muted);
+  min-height: 44px;
+}
+.mode-btn.active { background: #e8f0fd; border-color: var(--accent); color: var(--accent); }
+
+/* ─── Result section ────────────────────────────────────────────── */
+.result-person {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+}
+.result-person-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; cursor: pointer; user-select: none;
+}
+.result-person-header:hover { background: var(--surface); }
+.result-person-name { font-weight: 700; font-size: 1rem; }
+.result-person-total { font-weight: 800; font-size: 1.05rem; color: var(--accent); }
+.result-person-body {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px; display: none;
+}
+.result-person-body.open { display: block; }
+.result-breakdown { list-style: none; font-size: 0.88rem; }
+.result-breakdown li { display: flex; justify-content: space-between; padding: 4px 0; }
+.result-breakdown li + li { border-top: 1px solid var(--border); }
+.result-breakdown .subtotal-row { font-weight: 700; color: var(--text); }
+.result-breakdown .final-row { font-weight: 800; color: var(--accent); font-size: 0.95rem; }
+.grand-total-card {
+  background: var(--accent); color: #fff;
+  border-radius: var(--radius); padding: 18px;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.grand-total-label { font-size: 0.9rem; font-weight: 600; opacity: .88; }
+.grand-total-value { font-size: 1.4rem; font-weight: 800; }
+.check-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600;
+  margin-bottom: 14px;
+}
+.check-badge.ok { background: #e6f5ec; color: var(--success); border: 1.5px solid #b7dfc5; }
+.check-badge.fail { background: #ffeef0; color: var(--danger); border: 1.5px solid #ffc5cb; }
+.block-msg {
+  background: var(--warn-bg); border: 1.5px solid var(--warn-border);
+  border-radius: 8px; padding: 14px; font-size: 0.9rem; font-weight: 600;
+  color: #6b5000; text-align: center; margin-bottom: 14px;
+}
+.share-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.share-actions .btn { flex: 1; min-width: 140px; }
+
+/* ─── Empty state ───────────────────────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.empty-state p { margin-bottom: 8px; }
+.empty-state strong { color: var(--text); }
+
+/* ─── Toast ─────────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: #1f2328; color: #fff; border-radius: 24px;
+  padding: 10px 22px; font-size: 0.88rem; font-weight: 600;
+  z-index: 999; opacity: 0; transition: opacity .2s, transform .2s;
+  pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── Modal ─────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 16px;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: var(--bg); border-radius: var(--radius);
+  padding: 24px; max-width: 360px; width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+}
+.modal h3 { margin-bottom: 10px; }
+.modal p { color: var(--muted); margin-bottom: 20px; font-size: 0.92rem; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ─── Utility ───────────────────────────────────────────────────── */
+.mt-10 { margin-top: 10px; }
+.mt-16 { margin-top: 16px; }
+.help-text { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.nav-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="container">
+    <span class="app-title">Split Bill</span>
+    <div class="live-total" id="liveTotal" aria-live="polite">Total: <strong>Rp0</strong></div>
+    <button class="btn btn-secondary btn-sm" id="btnReset" aria-label="Mulai baru, hapus semua data">Mulai baru</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs" role="tablist" aria-label="Langkah-langkah">
+  <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="peserta"  id="tab-peserta"  aria-controls="sec-peserta" >Peserta</button>
+  <button class="tab-btn"        role="tab" aria-selected="false" data-tab="item"     id="tab-item"     aria-controls="sec-item"    >Item</button>
+  <button class="tab-btn"        role="tab" aria-selected="false" data-tab="assign"   id="tab-assign"   aria-controls="sec-assign"  >Assign</button>
+  <button class="tab-btn"        role="tab" aria-selected="false" data-tab="biaya"    id="tab-biaya"    aria-controls="sec-biaya"   >Biaya</button>
+  <button class="tab-btn"        role="tab" aria-selected="false" data-tab="hasil"    id="tab-hasil"    aria-controls="sec-hasil"   >Hasil</button>
+</div>
+
+<div class="container">
+
+<!-- ── TAB: PESERTA ─────────────────────────────────────────── -->
+<section id="sec-peserta" class="section active" role="tabpanel" aria-labelledby="tab-peserta">
+  <div class="card">
+    <div class="card-title">Tambah Peserta</div>
+    <div class="field">
+      <label for="inputPersonName">Nama peserta</label>
+      <input type="text" id="inputPersonName" placeholder="Contoh: Rina"
+             maxlength="30" autocomplete="off" aria-describedby="errPersonName" />
+      <div class="field-err" id="errPersonName" role="alert"></div>
+    </div>
+    <button class="btn btn-primary btn-full" id="btnAddPerson">+ Tambah Peserta</button>
+  </div>
+  <div id="peopleContainer"></div>
+  <div class="nav-row">
+    <button class="btn btn-primary" data-tab-next="item">Lanjut ke Item →</button>
+  </div>
+</section>
+
+<!-- ── TAB: ITEM ─────────────────────────────────────────────── -->
+<section id="sec-item" class="section" role="tabpanel" aria-labelledby="tab-item">
+  <div class="card">
+    <div class="card-title" id="itemFormTitle">Tambah Item</div>
+    <div class="field">
+      <label for="inputItemName">Nama item</label>
+      <input type="text" id="inputItemName" placeholder="Contoh: Nasi Goreng"
+             maxlength="60" autocomplete="off" aria-describedby="errItemName" />
+      <div class="field-err" id="errItemName" role="alert"></div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="inputItemPrice">Harga satuan (Rp)</label>
+        <input type="text" id="inputItemPrice" inputmode="numeric"
+               placeholder="25000" aria-describedby="errItemPrice" />
+        <div class="field-err" id="errItemPrice" role="alert"></div>
+      </div>
+      <div class="field">
+        <label for="inputItemQty">Jumlah</label>
+        <input type="text" id="inputItemQty" inputmode="numeric"
+               placeholder="1" aria-describedby="errItemQty" />
+        <div class="field-err" id="errItemQty" role="alert"></div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" id="btnSaveItem">+ Tambah Item</button>
+      <button class="btn btn-secondary" id="btnCancelEdit" style="display:none">Batal</button>
+    </div>
+  </div>
+  <div id="itemContainer"></div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" data-tab-next="peserta">← Peserta</button>
+    <button class="btn btn-primary"   data-tab-next="assign">Lanjut ke Assign →</button>
+  </div>
+</section>
+
+<!-- ── TAB: ASSIGN ───────────────────────────────────────────── -->
+<section id="sec-assign" class="section" role="tabpanel" aria-labelledby="tab-assign">
+  <div id="assignContainer"></div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" data-tab-next="item">← Item</button>
+    <button class="btn btn-primary"   data-tab-next="biaya">Lanjut ke Biaya →</button>
+  </div>
+</section>
+
+<!-- ── TAB: BIAYA ────────────────────────────────────────────── -->
+<section id="sec-biaya" class="section" role="tabpanel" aria-labelledby="tab-biaya">
+  <div class="card">
+    <div class="card-title">Pajak &amp; Service</div>
+    <p class="help-text" style="margin-bottom:12px">
+      Pajak (PB1/PPN) dihitung setelah service charge ditambahkan ke subtotal.
+      Keduanya dibagi proporsional ke tiap orang.
+    </p>
+    <div class="charges-grid">
+      <div class="field">
+        <label for="inputService">Service charge (%)</label>
+        <div class="suffix-input">
+          <input type="text" id="inputService" inputmode="decimal"
+                 placeholder="0" value="0" aria-describedby="errService" />
+          <span class="suffix" aria-hidden="true">%</span>
+        </div>
+        <div class="field-err" id="errService" role="alert"></div>
+      </div>
+      <div class="field">
+        <label for="inputTax">Pajak / PPN (%)</label>
+        <div class="suffix-input">
+          <input type="text" id="inputTax" inputmode="decimal"
+                 placeholder="0" value="0" aria-describedby="errTax" />
+          <span class="suffix" aria-hidden="true">%</span>
+        </div>
+        <div class="field-err" id="errTax" role="alert"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Diskon (opsional)</div>
+    <div class="discount-mode">
+      <button class="mode-btn active" data-discount-mode="none"    id="discNone">Tidak ada</button>
+      <button class="mode-btn"        data-discount-mode="nominal" id="discNominal">Nominal (Rp)</button>
+      <button class="mode-btn"        data-discount-mode="percent" id="discPercent">Persentase (%)</button>
+    </div>
+    <div id="discountInputWrap" style="display:none">
+      <div class="field">
+        <label for="inputDiscount" id="lblDiscount">Jumlah diskon</label>
+        <div class="suffix-input">
+          <input type="text" id="inputDiscount" inputmode="decimal"
+                 placeholder="0" aria-describedby="errDiscount" />
+          <span class="suffix" id="discountSuffix" aria-hidden="true"></span>
+        </div>
+        <div class="field-err" id="errDiscount" role="alert"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-secondary" data-tab-next="assign">← Assign</button>
+    <button class="btn btn-primary"   data-tab-next="hasil">Lihat Hasil →</button>
+  </div>
+</section>
+
+<!-- ── TAB: HASIL ────────────────────────────────────────────── -->
+<section id="sec-hasil" class="section" role="tabpanel" aria-labelledby="tab-hasil">
+  <div id="hasilContainer" aria-live="polite" aria-atomic="false"></div>
+</section>
+
+</div><!-- /container -->
+
+<!-- TOAST -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="modal-overlay hidden" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h3 id="modalTitle">Konfirmasi</h3>
+    <p id="modalMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancel">Batal</button>
+      <button class="btn btn-danger"    id="modalConfirm">Ya, lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================================================================
+   SPLIT BILL — Vanilla JS MVP
+   State-driven: every change mutates `state`, calls render(), then saveState().
+   calculateSplit() is pure (no side effects) and used for result + live total.
+================================================================ */
+
+/* ─── Utilities ─────────────────────────────────────────────────── */
+const fmt = (n) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+
+const esc = (s) => {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+};
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ─── Modal helper ──────────────────────────────────────────────── */
+function showConfirm(title, msg, onYes) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent   = msg;
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('hidden');
+  // Replace old listeners by cloning
+  const btnYes = document.getElementById('modalConfirm');
+  const btnNo  = document.getElementById('modalCancel');
+  const newYes = btnYes.cloneNode(true);
+  const newNo  = btnNo.cloneNode(true);
+  btnYes.parentNode.replaceChild(newYes, btnYes);
+  btnNo.parentNode.replaceChild(newNo, btnNo);
+  const close = () => overlay.classList.add('hidden');
+  newYes.addEventListener('click', () => { close(); onYes(); });
+  newNo.addEventListener('click',  close);
+}
+
+/* ─── State ─────────────────────────────────────────────────────── */
+const STORAGE_KEY = 'splitbill:v1';
+
+const emptyState = () => ({
+  version: 1,
+  people:  [],   // [{ id, name }]
+  items:   [],   // [{ id, name, price, qty, assignees: [personId] }]
+  charges: {
+    servicePct: 0,
+    taxPct:     0,
+    discount:   { mode: 'none', value: 0 }  // mode: 'none'|'nominal'|'percent'
+  },
+  createdAt: Date.now()
+});
+
+let state = emptyState();
+
+/* ─── Persistence ───────────────────────────────────────────────── */
+let _storageAvailable = true;
+
+function saveState() {
+  if (!_storageAvailable) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {
+    _storageAvailable = false;
+    showToast('⚠️ Data tidak tersimpan (penyimpanan penuh atau diblokir)');
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    // Validate minimal structure
+    if (
+      parsed &&
+      parsed.version === 1 &&
+      Array.isArray(parsed.people) &&
+      Array.isArray(parsed.items) &&
+      parsed.charges &&
+      typeof parsed.charges.servicePct === 'number' &&
+      typeof parsed.charges.taxPct === 'number' &&
+      parsed.charges.discount &&
+      ['none','nominal','percent'].includes(parsed.charges.discount.mode)
+    ) {
+      // Sanitize items: make sure assignees only reference existing people
+      const peopleIds = new Set(parsed.people.map(p => p.id));
+      parsed.items.forEach(item => {
+        item.assignees = (item.assignees || []).filter(id => peopleIds.has(id));
+      });
+      state = parsed;
+    }
+  } catch(e) {
+    // Corrupt data — fall back to clean state (already set above)
+  }
+}
+
+/* ─── Pure Calculation ──────────────────────────────────────────── */
+/**
+ * calculateSplit(state) → { personResults[], subtotalAll, discountTotal,
+ *   serviceTotal, taxTotal, grandTotal, balanceOk }
+ *
+ * All amounts in integer Rupiah.
+ *
+ * Rounding: "largest remainder" method.
+ *   1. Compute each person's exact proportional share of grand_total.
+ *   2. Floor each share → integer.
+ *   3. Sum of floors may be less than grand_total by a few Rupiah.
+ *   4. Distribute the leftover 1 Rp at a time to persons with the
+ *      largest fractional part (ties broken by list order, i.e. stable sort).
+ *   This guarantees sum(persons) === grand_total always.
+ */
+function calculateSplit(st) {
+  const { people, items, charges } = st;
+  const { servicePct, taxPct, discount } = charges;
+
+  // --- Person subtotals: each item's line total split equally among assignees
+  const subtotals = {}; // personId → exact (may be fractional)
+  people.forEach(p => { subtotals[p.id] = 0; });
+
+  for (const item of items) {
+    const lineTotal = item.price * item.qty;
+    const n = item.assignees.length;
+    if (n === 0) continue; // unassigned — excluded from calc
+    const share = lineTotal / n;
+    for (const pid of item.assignees) {
+      subtotals[pid] = (subtotals[pid] || 0) + share;
+    }
+  }
+
+  const subtotalAll = people.reduce((s, p) => s + subtotals[p.id], 0);
+
+  // --- Discount
+  let discountTotal = 0;
+  if (discount.mode === 'nominal') {
+    discountTotal = Math.min(discount.value, subtotalAll);
+  } else if (discount.mode === 'percent') {
+    discountTotal = (discount.value / 100) * subtotalAll;
+  }
+
+  // --- Service: applied on (subtotal - discount)
+  const serviceBase   = subtotalAll - discountTotal;
+  const serviceTotal  = (servicePct / 100) * serviceBase;
+
+  // --- Tax: applied on (subtotal - discount + service)
+  const taxBase   = serviceBase + serviceTotal;
+  const taxTotal  = (taxPct / 100) * taxBase;
+
+  // --- Grand total, rounded to nearest whole Rupiah
+  const grandTotalExact = subtotalAll - discountTotal + serviceTotal + taxTotal;
+  const grandTotal      = Math.round(grandTotalExact);
+
+  // --- Per-person proportional share of grand total
+  // Use exact floating amounts to keep fractions for largest-remainder
+  const personResults = people.map(p => {
+    const sub = subtotals[p.id];
+    // Proportion of subtotal (or 0 if no items at all)
+    const proportion = subtotalAll > 0 ? sub / subtotalAll : 0;
+
+    // Exact amounts for breakdown
+    const myDiscount = discountTotal * proportion;
+    const myService  = serviceTotal  * proportion;
+    const myTax      = taxTotal      * proportion;
+    const exactFinal = sub - myDiscount + myService + myTax;
+
+    return {
+      id:        p.id,
+      name:      p.name,
+      subtotal:  Math.round(sub),
+      discount:  myDiscount,
+      service:   myService,
+      tax:       myTax,
+      exactFinal,
+      finalAmt:  0 // filled by rounding step
+    };
+  });
+
+  // --- Largest-remainder rounding (ensures sum === grandTotal exactly)
+  const floors = personResults.map(r => Math.floor(r.exactFinal));
+  const floorSum = floors.reduce((a, b) => a + b, 0);
+  let remainder = grandTotal - floorSum; // always >= 0
+
+  // Sort indices by fractional part descending (stable — ties keep list order)
+  const order = personResults
+    .map((_, i) => i)
+    .sort((a, b) => {
+      const fa = personResults[a].exactFinal - floors[a];
+      const fb = personResults[b].exactFinal - floors[b];
+      return fb - fa; // descending
+    });
+
+  order.forEach((idx, rank) => {
+    floors[idx] += (rank < remainder) ? 1 : 0;
+  });
+
+  personResults.forEach((r, i) => {
+    r.finalAmt  = floors[i];
+    // Round breakdown display values
+    r.discount  = Math.round(r.discount);
+    r.service   = Math.round(r.service);
+    r.tax       = Math.round(r.tax);
+  });
+
+  const sumPersons = personResults.reduce((s, r) => s + r.finalAmt, 0);
+  const balanceOk  = sumPersons === grandTotal;
+
+  return {
+    personResults,
+    subtotalAll:   Math.round(subtotalAll),
+    discountTotal: Math.round(discountTotal),
+    serviceTotal:  Math.round(serviceTotal),
+    taxTotal:      Math.round(taxTotal),
+    grandTotal,
+    balanceOk
+  };
+}
+
+/* ─── Helpers: unassigned items check ──────────────────────────── */
+function unassignedItems() {
+  return state.items.filter(it => it.assignees.length === 0);
+}
+
+/* ─── Render functions ──────────────────────────────────────────── */
+
+function renderPeople() {
+  const wrap = document.getElementById('peopleContainer');
+  if (state.people.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <p><strong>Belum ada peserta.</strong></p>
+        <p>Tambahkan nama orang-orang yang ikut makan.</p>
+      </div>`;
+    return;
+  }
+  const ul = document.createElement('ul');
+  ul.className = 'people-list';
+  ul.setAttribute('aria-label', 'Daftar peserta');
+  state.people.forEach(p => {
+    const li = document.createElement('li');
+    li.className = 'person-item';
+    // Use textContent (not innerHTML) to avoid XSS
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'person-name';
+    nameSpan.textContent = p.name;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-danger btn-sm';
+    btn.textContent = 'Hapus';
+    btn.setAttribute('aria-label', `Hapus ${p.name}`);
+    btn.dataset.personId = p.id;
+    btn.addEventListener('click', () => handleRemovePerson(p.id));
+    li.appendChild(nameSpan);
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+  wrap.innerHTML = '';
+  wrap.appendChild(ul);
+}
+
+function renderItems() {
+  const wrap = document.getElementById('itemContainer');
+  if (state.items.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🍽️</div>
+        <p><strong>Belum ada item.</strong></p>
+        <p>Tambahkan pesanan yang ada di struk.</p>
+      </div>`;
+    return;
+  }
+  wrap.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'item-list';
+  state.items.forEach(item => {
+    const lineTotal = item.price * item.qty;
+    const isUnassigned = item.assignees.length === 0;
+    const card = document.createElement('div');
+    card.className = 'item-card' + (isUnassigned ? ' unassigned' : '');
+    card.dataset.itemId = item.id;
+
+    // Header row
+    const header = document.createElement('div');
+    header.className = 'item-header';
+
+    const info = document.createElement('div');
+    const nameEl = document.createElement('div');
+    nameEl.className = 'item-name';
+    nameEl.textContent = item.name;
+    const metaEl = document.createElement('div');
+    metaEl.className = 'item-meta';
+    metaEl.textContent = `${fmt(item.price)} × ${item.qty}`;
+    info.appendChild(nameEl);
+    info.appendChild(metaEl);
+    if (isUnassigned) {
+      const badge = document.createElement('div');
+      badge.className = 'unassigned-badge';
+      badge.textContent = '⚠ Belum di-assign';
+      info.appendChild(badge);
+    }
+
+    const totalEl = document.createElement('div');
+    totalEl.className = 'item-total';
+    totalEl.textContent = fmt(lineTotal);
+
+    header.appendChild(info);
+    header.appendChild(totalEl);
+    card.appendChild(header);
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'item-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-secondary btn-sm';
+    editBtn.textContent = 'Edit';
+    editBtn.setAttribute('aria-label', `Edit ${item.name}`);
+    editBtn.addEventListener('click', () => startEditItem(item.id));
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-danger btn-sm';
+    delBtn.textContent = 'Hapus';
+    delBtn.setAttribute('aria-label', `Hapus ${item.name}`);
+    delBtn.addEventListener('click', () => handleRemoveItem(item.id));
+
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    card.appendChild(actions);
+    list.appendChild(card);
+  });
+  wrap.appendChild(list);
+}
+
+function renderAssign() {
+  const wrap = document.getElementById('assignContainer');
+  wrap.innerHTML = '';
+
+  if (state.people.length === 0 || state.items.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔗</div>
+        <p><strong>Tambahkan peserta dan item terlebih dulu</strong></p>
+        <p>kemudian tentukan siapa makan apa di sini.</p>
+      </div>`;
+    return;
+  }
+
+  state.items.forEach(item => {
+    const isUnassigned = item.assignees.length === 0;
+    const div = document.createElement('div');
+    div.className = 'assign-item' + (isUnassigned ? ' unassigned' : '');
+    div.dataset.itemId = item.id;
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'assign-item-header';
+
+    const nameWrap = document.createElement('div');
+    const nameEl = document.createElement('div');
+    nameEl.className = 'assign-item-name';
+    nameEl.textContent = item.name;
+    const metaEl = document.createElement('div');
+    metaEl.style.fontSize = '0.82rem';
+    metaEl.style.color = 'var(--muted)';
+    metaEl.textContent = `${fmt(item.price)} × ${item.qty} = ${fmt(item.price * item.qty)}`;
+    nameWrap.appendChild(nameEl);
+    nameWrap.appendChild(metaEl);
+    hdr.appendChild(nameWrap);
+
+    // Semua button
+    const allBtn = document.createElement('button');
+    allBtn.className = 'btn select-all-btn btn-sm';
+    allBtn.textContent = 'Semua';
+    allBtn.setAttribute('aria-label', `Pilih semua peserta untuk ${item.name}`);
+    allBtn.addEventListener('click', () => {
+      const allIds = state.people.map(p => p.id);
+      const it = state.items.find(i => i.id === item.id);
+      it.assignees = [...allIds];
+      saveState();
+      renderAssign();
+      renderItems();
+      updateLiveTotal();
+    });
+    hdr.appendChild(allBtn);
+    div.appendChild(hdr);
+
+    // Checkboxes
+    const cbWrap = document.createElement('div');
+    cbWrap.className = 'assign-people';
+    cbWrap.setAttribute('role', 'group');
+    cbWrap.setAttribute('aria-label', `Pilih peserta untuk ${item.name}`);
+
+    state.people.forEach(p => {
+      const checked = item.assignees.includes(p.id);
+      const lbl = document.createElement('label');
+      lbl.className = 'assign-cb-label';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = checked;
+      cb.setAttribute('aria-label', p.name);
+      cb.addEventListener('change', () => {
+        const it = state.items.find(i => i.id === item.id);
+        if (cb.checked) {
+          if (!it.assignees.includes(p.id)) it.assignees.push(p.id);
+        } else {
+          it.assignees = it.assignees.filter(id => id !== p.id);
+        }
+        // Re-style: update unassigned class without full re-render for performance
+        const isNowUnassigned = it.assignees.length === 0;
+        div.className = 'assign-item' + (isNowUnassigned ? ' unassigned' : '');
+        saveState();
+        renderItems();
+        updateLiveTotal();
+      });
+      const nameText = document.createTextNode(p.name);
+      lbl.appendChild(cb);
+      lbl.appendChild(nameText);
+      cbWrap.appendChild(lbl);
+    });
+    div.appendChild(cbWrap);
+    wrap.appendChild(div);
+  });
+}
+
+function renderCharges() {
+  const { servicePct, taxPct, discount } = state.charges;
+  document.getElementById('inputService').value = servicePct || 0;
+  document.getElementById('inputTax').value     = taxPct     || 0;
+
+  // Discount mode buttons
+  ['none','nominal','percent'].forEach(m => {
+    document.querySelector(`[data-discount-mode="${m}"]`)
+      .classList.toggle('active', discount.mode === m);
+  });
+
+  const wrap = document.getElementById('discountInputWrap');
+  if (discount.mode === 'none') {
+    wrap.style.display = 'none';
+  } else {
+    wrap.style.display = 'block';
+    document.getElementById('inputDiscount').value = discount.value || 0;
+    document.getElementById('discountSuffix').textContent =
+      discount.mode === 'percent' ? '%' : '';
+    document.getElementById('lblDiscount').textContent =
+      discount.mode === 'percent' ? 'Persentase diskon (%)' : 'Nominal diskon (Rp)';
+  }
+}
+
+function renderHasil() {
+  const wrap = document.getElementById('hasilContainer');
+  wrap.innerHTML = '';
+
+  const ua = unassignedItems();
+  if (ua.length > 0) {
+    const div = document.createElement('div');
+    div.className = 'block-msg';
+    div.setAttribute('role', 'alert');
+    const names = ua.map(i => i.name).join(', ');
+    div.textContent = `⚠ Item belum di-assign: ${names}. Silakan assign dulu sebelum melihat hasil.`;
+    wrap.appendChild(div);
+    return;
+  }
+
+  if (state.people.length === 0 || state.items.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p><strong>Belum ada data.</strong></p>
+        <p>Tambahkan peserta dan item terlebih dahulu.</p>
+      </div>`;
+    return;
+  }
+
+  const result = calculateSplit(state);
+
+  // Grand total card
+  const gtCard = document.createElement('div');
+  gtCard.className = 'grand-total-card';
+  const gtLabel = document.createElement('div');
+  gtLabel.className = 'grand-total-label';
+  gtLabel.textContent = 'Total Tagihan';
+  const gtVal = document.createElement('div');
+  gtVal.className = 'grand-total-value';
+  gtVal.textContent = fmt(result.grandTotal);
+  gtCard.appendChild(gtLabel);
+  gtCard.appendChild(gtVal);
+  wrap.appendChild(gtCard);
+
+  // Balance check badge
+  const badge = document.createElement('div');
+  badge.className = 'check-badge ' + (result.balanceOk ? 'ok' : 'fail');
+  badge.textContent = result.balanceOk
+    ? `✓ Total cocok: jumlah semua peserta = ${fmt(result.grandTotal)}`
+    : `✗ Peringatan: ada selisih pembulatan!`;
+  wrap.appendChild(badge);
+
+  // Per-person results (collapsible)
+  result.personResults.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'result-person';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'result-person-header';
+    hdr.setAttribute('role', 'button');
+    hdr.setAttribute('tabindex', '0');
+    hdr.setAttribute('aria-expanded', 'false');
+    hdr.setAttribute('aria-label', `${r.name}: ${fmt(r.finalAmt)} — klik untuk detail`);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'result-person-name';
+    nameEl.textContent = r.name;
+    const totalEl = document.createElement('span');
+    totalEl.className = 'result-person-total';
+    totalEl.textContent = fmt(r.finalAmt);
+    hdr.appendChild(nameEl);
+    hdr.appendChild(totalEl);
+
+    const body = document.createElement('div');
+    body.className = 'result-person-body';
+
+    // Item breakdown
+    const ul = document.createElement('ul');
+    ul.className = 'result-breakdown';
+
+    // Items eaten by this person
+    const myItems = state.items.filter(it => it.assignees.includes(r.id));
+    myItems.forEach(it => {
+      const share = Math.round((it.price * it.qty) / it.assignees.length);
+      const li = document.createElement('li');
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = it.name + (it.assignees.length > 1 ? ` (÷${it.assignees.length})` : '');
+      const valSpan = document.createElement('span');
+      valSpan.textContent = fmt(share);
+      li.appendChild(nameSpan);
+      li.appendChild(valSpan);
+      ul.appendChild(li);
+    });
+
+    const mkRow = (label, value, cls) => {
+      const li = document.createElement('li');
+      if (cls) li.className = cls;
+      const lSpan = document.createElement('span'); lSpan.textContent = label;
+      const vSpan = document.createElement('span'); vSpan.textContent = value;
+      li.appendChild(lSpan); li.appendChild(vSpan);
+      return li;
+    };
+
+    ul.appendChild(mkRow('Subtotal', fmt(r.subtotal), 'subtotal-row'));
+    if (result.discountTotal > 0) ul.appendChild(mkRow('Diskon', `−${fmt(r.discount)}`, ''));
+    if (result.serviceTotal  > 0) ul.appendChild(mkRow('Service', `+${fmt(r.service)}`, ''));
+    if (result.taxTotal      > 0) ul.appendChild(mkRow('Pajak', `+${fmt(r.tax)}`, ''));
+    ul.appendChild(mkRow('Total', fmt(r.finalAmt), 'final-row'));
+
+    body.appendChild(ul);
+    card.appendChild(hdr);
+    card.appendChild(body);
+
+    // Toggle expand/collapse
+    const toggle = () => {
+      const open = body.classList.toggle('open');
+      hdr.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    hdr.addEventListener('click', toggle);
+    hdr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }});
+
+    wrap.appendChild(card);
+  });
+
+  // Summary breakdown
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'card mt-10';
+  const sumTitle = document.createElement('div');
+  sumTitle.className = 'card-title';
+  sumTitle.textContent = 'Ringkasan';
+  summaryCard.appendChild(sumTitle);
+  const sumList = document.createElement('ul');
+  sumList.className = 'result-breakdown';
+  const mk2 = (l, v) => {
+    const li = document.createElement('li');
+    const ls = document.createElement('span'); ls.textContent = l;
+    const vs = document.createElement('span'); vs.textContent = v;
+    li.appendChild(ls); li.appendChild(vs);
+    return li;
+  };
+  sumList.appendChild(mk2('Subtotal semua', fmt(result.subtotalAll)));
+  if (result.discountTotal > 0) sumList.appendChild(mk2('Diskon', `−${fmt(result.discountTotal)}`));
+  if (result.serviceTotal  > 0) sumList.appendChild(mk2('Service charge', `+${fmt(result.serviceTotal)}`));
+  if (result.taxTotal      > 0) sumList.appendChild(mk2('Pajak / PPN', `+${fmt(result.taxTotal)}`));
+  const finalLi = mk2('Total tagihan', fmt(result.grandTotal));
+  finalLi.className = 'final-row';
+  sumList.appendChild(finalLi);
+  summaryCard.appendChild(sumList);
+  wrap.appendChild(summaryCard);
+
+  // Share section
+  const shareCard = document.createElement('div');
+  shareCard.className = 'card';
+  const shareTitle = document.createElement('div');
+  shareTitle.className = 'card-title';
+  shareTitle.textContent = 'Bagikan Hasil';
+  shareCard.appendChild(shareTitle);
+  const shareActions = document.createElement('div');
+  shareActions.className = 'share-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn btn-secondary btn-full';
+  copyBtn.textContent = '📋 Salin';
+  copyBtn.setAttribute('aria-label', 'Salin hasil ke clipboard');
+  copyBtn.addEventListener('click', () => copyResult(result));
+
+  const waBtn = document.createElement('button');
+  waBtn.className = 'btn btn-success btn-full';
+  waBtn.textContent = '💬 Kirim ke WhatsApp';
+  waBtn.setAttribute('aria-label', 'Kirim hasil ke WhatsApp');
+  waBtn.addEventListener('click', () => sendWhatsApp(result));
+
+  shareActions.appendChild(copyBtn);
+  shareActions.appendChild(waBtn);
+  shareCard.appendChild(shareActions);
+  wrap.appendChild(shareCard);
+}
+
+/* ─── Live total update ─────────────────────────────────────────── */
+function updateLiveTotal() {
+  const hasData = state.people.length > 0 && state.items.length > 0;
+  const el = document.getElementById('liveTotal');
+  if (!hasData) {
+    el.innerHTML = 'Total: <strong>Rp0</strong>';
+    return;
+  }
+  const { grandTotal } = calculateSplit(state);
+  el.innerHTML = `Total: <strong>${fmt(grandTotal)}</strong>`;
+}
+
+/* ─── Master render ─────────────────────────────────────────────── */
+function render() {
+  renderPeople();
+  renderItems();
+  renderAssign();
+  renderCharges();
+  renderHasil();
+  updateLiveTotal();
+}
+
+/* ─── Tab navigation ────────────────────────────────────────────── */
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const active = b.dataset.tab === name;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('.section').forEach(s => {
+    s.classList.toggle('active', s.id === 'sec-' + name);
+  });
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+document.querySelectorAll('[data-tab-next]').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tabNext));
+});
+
+/* ─── People handlers ───────────────────────────────────────────── */
+function handleAddPerson() {
+  const input = document.getElementById('inputPersonName');
+  const errEl = document.getElementById('errPersonName');
+  const name  = input.value.trim();
+
+  errEl.textContent = '';
+  errEl.classList.remove('show');
+  input.removeAttribute('aria-invalid');
+
+  if (!name) {
+    errEl.textContent = 'Nama tidak boleh kosong.';
+    errEl.classList.add('show');
+    input.setAttribute('aria-invalid', 'true');
+    input.focus();
+    return;
+  }
+  if (name.length > 30) {
+    errEl.textContent = 'Nama maksimal 30 karakter.';
+    errEl.classList.add('show');
+    input.setAttribute('aria-invalid', 'true');
+    return;
+  }
+  // Case-insensitive uniqueness
+  if (state.people.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    errEl.textContent = 'Nama sudah ada, gunakan nama lain.';
+    errEl.classList.add('show');
+    input.setAttribute('aria-invalid', 'true');
+    return;
+  }
+
+  state.people.push({ id: uid(), name });
+  input.value = '';
+  saveState();
+  renderPeople();
+  renderAssign();
+  updateLiveTotal();
+  input.focus();
+}
+
+function handleRemovePerson(personId) {
+  const person = state.people.find(p => p.id === personId);
+  if (!person) return;
+
+  const assignedItems = state.items.filter(it => it.assignees.includes(personId));
+  if (assignedItems.length > 0) {
+    const names = assignedItems.map(i => i.name).join(', ');
+    showConfirm(
+      'Hapus Peserta',
+      `${person.name} di-assign ke: ${names}. Menghapus akan membersihkan assign mereka. Lanjutkan?`,
+      () => {
+        state.items.forEach(it => {
+          it.assignees = it.assignees.filter(id => id !== personId);
+        });
+        state.people = state.people.filter(p => p.id !== personId);
+        saveState();
+        render();
+      }
+    );
+  } else {
+    state.people = state.people.filter(p => p.id !== personId);
+    saveState();
+    renderPeople();
+    renderAssign();
+    renderHasil();
+    updateLiveTotal();
+  }
+}
+
+document.getElementById('btnAddPerson').addEventListener('click', handleAddPerson);
+document.getElementById('inputPersonName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleAddPerson();
+});
+
+/* ─── Item handlers ─────────────────────────────────────────────── */
+let editingItemId = null;
+
+function validateItemForm() {
+  let valid = true;
+  const nameInput  = document.getElementById('inputItemName');
+  const priceInput = document.getElementById('inputItemPrice');
+  const qtyInput   = document.getElementById('inputItemQty');
+  const errName    = document.getElementById('errItemName');
+  const errPrice   = document.getElementById('errItemPrice');
+  const errQty     = document.getElementById('errItemQty');
+
+  [errName, errPrice, errQty].forEach(e => { e.textContent=''; e.classList.remove('show'); });
+  [nameInput, priceInput, qtyInput].forEach(i => i.removeAttribute('aria-invalid'));
+
+  const name  = nameInput.value.trim();
+  const price = parseInt(priceInput.value.replace(/\D/g,''), 10);
+  const qty   = parseInt(qtyInput.value.replace(/\D/g,''), 10);
+
+  if (!name) {
+    errName.textContent = 'Nama item tidak boleh kosong.';
+    errName.classList.add('show');
+    nameInput.setAttribute('aria-invalid', 'true');
+    valid = false;
+  }
+  if (isNaN(price) || price < 1) {
+    errPrice.textContent = 'Harga harus bilangan bulat ≥ 1.';
+    errPrice.classList.add('show');
+    priceInput.setAttribute('aria-invalid', 'true');
+    valid = false;
+  } else if (price > 100_000_000) {
+    errPrice.textContent = 'Harga terlalu besar (maks 100 juta).';
+    errPrice.classList.add('show');
+    priceInput.setAttribute('aria-invalid', 'true');
+    valid = false;
+  }
+  if (isNaN(qty) || qty < 1) {
+    errQty.textContent = 'Jumlah harus bilangan bulat ≥ 1.';
+    errQty.classList.add('show');
+    qtyInput.setAttribute('aria-invalid', 'true');
+    valid = false;
+  } else if (qty > 9999) {
+    errQty.textContent = 'Jumlah terlalu besar (maks 9999).';
+    errQty.classList.add('show');
+    qtyInput.setAttribute('aria-invalid', 'true');
+    valid = false;
+  }
+  return valid ? { name, price, qty } : null;
+}
+
+function handleSaveItem() {
+  const data = validateItemForm();
+  if (!data) return;
+
+  if (editingItemId) {
+    const item = state.items.find(i => i.id === editingItemId);
+    if (item) { item.name = data.name; item.price = data.price; item.qty = data.qty; }
+    editingItemId = null;
+    document.getElementById('itemFormTitle').textContent = 'Tambah Item';
+    document.getElementById('btnSaveItem').textContent   = '+ Tambah Item';
+    document.getElementById('btnCancelEdit').style.display = 'none';
+  } else {
+    state.items.push({ id: uid(), name: data.name, price: data.price, qty: data.qty, assignees: [] });
+  }
+
+  document.getElementById('inputItemName').value  = '';
+  document.getElementById('inputItemPrice').value = '';
+  document.getElementById('inputItemQty').value   = '';
+  saveState();
+  renderItems();
+  renderAssign();
+  renderHasil();
+  updateLiveTotal();
+  document.getElementById('inputItemName').focus();
+}
+
+function startEditItem(itemId) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item) return;
+  editingItemId = itemId;
+  document.getElementById('inputItemName').value  = item.name;
+  document.getElementById('inputItemPrice').value = item.price;
+  document.getElementById('inputItemQty').value   = item.qty;
+  document.getElementById('itemFormTitle').textContent = 'Edit Item';
+  document.getElementById('btnSaveItem').textContent   = '💾 Simpan Perubahan';
+  document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+  // Scroll to form
+  document.getElementById('inputItemName').focus();
+  document.getElementById('inputItemName').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function handleRemoveItem(itemId) {
+  state.items = state.items.filter(i => i.id !== itemId);
+  if (editingItemId === itemId) {
+    editingItemId = null;
+    document.getElementById('inputItemName').value  = '';
+    document.getElementById('inputItemPrice').value = '';
+    document.getElementById('inputItemQty').value   = '';
+    document.getElementById('itemFormTitle').textContent = 'Tambah Item';
+    document.getElementById('btnSaveItem').textContent   = '+ Tambah Item';
+    document.getElementById('btnCancelEdit').style.display = 'none';
+  }
+  saveState();
+  renderItems();
+  renderAssign();
+  renderHasil();
+  updateLiveTotal();
+}
+
+document.getElementById('btnSaveItem').addEventListener('click', handleSaveItem);
+document.getElementById('btnCancelEdit').addEventListener('click', () => {
+  editingItemId = null;
+  document.getElementById('inputItemName').value  = '';
+  document.getElementById('inputItemPrice').value = '';
+  document.getElementById('inputItemQty').value   = '';
+  document.getElementById('itemFormTitle').textContent = 'Tambah Item';
+  document.getElementById('btnSaveItem').textContent   = '+ Tambah Item';
+  document.getElementById('btnCancelEdit').style.display = 'none';
+  ['errItemName','errItemPrice','errItemQty'].forEach(id => {
+    const e = document.getElementById(id);
+    e.textContent = ''; e.classList.remove('show');
+  });
+});
+document.getElementById('inputItemQty').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSaveItem();
+});
+
+/* ─── Charges handlers ──────────────────────────────────────────── */
+function parsePct(val) {
+  const n = parseFloat(val);
+  if (isNaN(n) || n < 0 || n > 100) return null;
+  return n;
+}
+
+function handleChargesChange() {
+  const svcVal = document.getElementById('inputService').value;
+  const taxVal = document.getElementById('inputTax').value;
+  const svcErr = document.getElementById('errService');
+  const taxErr = document.getElementById('errTax');
+
+  svcErr.textContent = ''; svcErr.classList.remove('show');
+  taxErr.textContent = ''; taxErr.classList.remove('show');
+
+  let changed = false;
+  const svc = parsePct(svcVal);
+  if (svc === null) {
+    svcErr.textContent = 'Masukkan angka 0–100.';
+    svcErr.classList.add('show');
+  } else if (svc !== state.charges.servicePct) {
+    state.charges.servicePct = svc; changed = true;
+  }
+
+  const tax = parsePct(taxVal);
+  if (tax === null) {
+    taxErr.textContent = 'Masukkan angka 0–100.';
+    taxErr.classList.add('show');
+  } else if (tax !== state.charges.taxPct) {
+    state.charges.taxPct = tax; changed = true;
+  }
+
+  if (changed) { saveState(); updateLiveTotal(); renderHasil(); }
+}
+
+['inputService','inputTax'].forEach(id => {
+  document.getElementById(id).addEventListener('change', handleChargesChange);
+});
+
+// Discount mode buttons
+document.querySelectorAll('[data-discount-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.discountMode;
+    state.charges.discount.mode = mode;
+    if (mode === 'none') state.charges.discount.value = 0;
+    saveState();
+    renderCharges();
+    updateLiveTotal();
+    renderHasil();
+  });
+});
+
+function handleDiscountChange() {
+  const input  = document.getElementById('inputDiscount');
+  const errEl  = document.getElementById('errDiscount');
+  errEl.textContent = ''; errEl.classList.remove('show');
+  input.removeAttribute('aria-invalid');
+
+  const raw = parseFloat(input.value);
+  if (isNaN(raw) || raw < 0) {
+    errEl.textContent = 'Nilai diskon tidak valid (minimal 0).';
+    errEl.classList.add('show');
+    input.setAttribute('aria-invalid', 'true');
+    return;
+  }
+
+  // Validate: cannot exceed subtotal
+  const subtotalAll = state.items.reduce((s, it) => s + it.price * it.qty, 0);
+  if (state.charges.discount.mode === 'nominal' && raw > subtotalAll) {
+    errEl.textContent = `Diskon tidak boleh melebihi subtotal (${fmt(subtotalAll)}).`;
+    errEl.classList.add('show');
+    input.setAttribute('aria-invalid', 'true');
+    return;
+  }
+  if (state.charges.discount.mode === 'percent' && raw > 100) {
+    errEl.textContent = 'Persentase diskon tidak boleh melebihi 100%.';
+    errEl.classList.add('show');
+    input.setAttribute('aria-invalid', 'true');
+    return;
+  }
+
+  state.charges.discount.value = raw;
+  saveState();
+  updateLiveTotal();
+  renderHasil();
+}
+
+document.getElementById('inputDiscount').addEventListener('change', handleDiscountChange);
+
+/* ─── Reset handler ─────────────────────────────────────────────── */
+document.getElementById('btnReset').addEventListener('click', () => {
+  showConfirm(
+    'Mulai Baru',
+    'Semua data akan dihapus dan tidak bisa dikembalikan. Yakin?',
+    () => {
+      state = emptyState();
+      editingItemId = null;
+      saveState();
+      render();
+      switchTab('peserta');
+      showToast('Data berhasil dihapus. Mulai dari awal!');
+    }
+  );
+});
+
+/* ─── Share functions ───────────────────────────────────────────── */
+function buildShareText(result) {
+  const now    = new Date();
+  const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+  const lines  = [];
+  lines.push('Split Bill');
+  lines.push(`Tanggal: ${tanggal}`);
+  lines.push('─'.repeat(28));
+  result.personResults.forEach(r => {
+    lines.push(`${r.name}: ${fmt(r.finalAmt)}`);
+  });
+  lines.push('─'.repeat(28));
+  lines.push(`Total: ${fmt(result.grandTotal)}`);
+  const details = [];
+  if (result.discountTotal > 0) details.push(`Diskon: −${fmt(result.discountTotal)}`);
+  if (result.serviceTotal  > 0) details.push(`Service: +${fmt(result.serviceTotal)}`);
+  if (result.taxTotal      > 0) details.push(`Pajak: +${fmt(result.taxTotal)}`);
+  if (details.length > 0) lines.push(details.join(' | '));
+  lines.push('─'.repeat(28));
+  lines.push('Dibuat dengan Split Bill');
+  return lines.join('\n');
+}
+
+function copyResult(result) {
+  const text = buildShareText(result);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('✓ Berhasil disalin ke clipboard!'))
+      .catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  // execCommand fallback for non-HTTPS environments
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+  document.body.removeChild(ta);
+  if (ok) {
+    showToast('✓ Berhasil disalin ke clipboard!');
+  } else {
+    showToast('⚠ Tidak bisa menyalin otomatis. Salin teks secara manual.');
+  }
+}
+
+function sendWhatsApp(result) {
+  const text = buildShareText(result);
+  const encoded = encodeURIComponent(text);
+  const url = `https://wa.me/?text=${encoded}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/* ─── Self-test (runs only when URL has ?test=1) ─────────────────── */
+function runSelfTests() {
+  console.group('Split Bill — Self Tests');
+  let pass = 0; let fail = 0;
+
+  function assert(label, condition) {
+    if (condition) {
+      console.log(`✅ PASS: ${label}`);
+      pass++;
+    } else {
+      console.error(`❌ FAIL: ${label}`);
+      fail++;
+    }
+  }
+
+  // Reference test case from PRD
+  const refState = {
+    version: 1,
+    people: [
+      { id: 'a', name: 'Ani' },
+      { id: 'b', name: 'Budi' },
+      { id: 'c', name: 'Citra' }
+    ],
+    items: [
+      { id: 'i1', name: 'Nasi Goreng', price: 25000, qty: 2, assignees: ['a','b'] },
+      { id: 'i2', name: 'Es Teh',      price: 8000,  qty: 3, assignees: ['a','b','c'] },
+      { id: 'i3', name: 'Pizza',       price: 90000, qty: 1, assignees: ['b','c'] }
+    ],
+    charges: { servicePct: 5, taxPct: 10, discount: { mode: 'percent', value: 10 } }
+  };
+  const ref = calculateSplit(refState);
+  assert('Reference: subtotalAll = 164000',   ref.subtotalAll    === 164000);
+  assert('Reference: grandTotal = 170478',    ref.grandTotal     === 170478);
+  assert('Reference: Ani = 34304',            ref.personResults[0].finalAmt === 34304);
+  assert('Reference: Budi = 81081',           ref.personResults[1].finalAmt === 81081);
+  assert('Reference: Citra = 55093',          ref.personResults[2].finalAmt === 55093);
+  assert('Reference: sum == grandTotal',      ref.balanceOk);
+
+  // Single person
+  const single = calculateSplit({
+    people: [{ id: 'x', name: 'Solo' }],
+    items: [{ id: 'y', price: 50000, qty: 2, assignees: ['x'] }],
+    charges: { servicePct: 10, taxPct: 11, discount: { mode: 'none', value: 0 } }
+  });
+  assert('Single person: finalAmt = grandTotal', single.personResults[0].finalAmt === single.grandTotal);
+  assert('Single person: sum == grandTotal',      single.balanceOk);
+
+  // 0% everything
+  const zeroPct = calculateSplit({
+    people: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }],
+    items: [{ id: 'i', price: 60000, qty: 1, assignees: ['a','b'] }],
+    charges: { servicePct: 0, taxPct: 0, discount: { mode: 'none', value: 0 } }
+  });
+  assert('0% all: grandTotal = 60000', zeroPct.grandTotal === 60000);
+  assert('0% all: sum == grandTotal',  zeroPct.balanceOk);
+
+  // Nominal discount
+  const nomDisc = calculateSplit({
+    people: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }],
+    items: [{ id: 'i', price: 100000, qty: 1, assignees: ['a','b'] }],
+    charges: { servicePct: 0, taxPct: 0, discount: { mode: 'nominal', value: 20000 } }
+  });
+  assert('Nominal discount: grandTotal = 80000', nomDisc.grandTotal === 80000);
+  assert('Nominal discount: sum == grandTotal',   nomDisc.balanceOk);
+
+  // 3-way split of 100,000 (tests rounding: 33333+33333+33334=100000)
+  const three = calculateSplit({
+    people: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }],
+    items: [{ id: 'i', price: 100000, qty: 1, assignees: ['a','b','c'] }],
+    charges: { servicePct: 0, taxPct: 0, discount: { mode: 'none', value: 0 } }
+  });
+  assert('3-way 100k: sum == 100000', three.personResults.reduce((s,r) => s + r.finalAmt,0) === 100000);
+  assert('3-way 100k: balanceOk', three.balanceOk);
+
+  // Large bill
+  const large = calculateSplit({
+    people: Array.from({length:5}, (_,i) => ({ id: 'p'+i, name: 'P'+i })),
+    items:  Array.from({length:10}, (_,i) => ({
+      id: 'item'+i, name: 'Item'+i, price: 79999, qty: 3,
+      assignees: ['p0','p1','p2','p3','p4']
+    })),
+    charges: { servicePct: 5, taxPct: 11, discount: { mode: 'percent', value: 5 } }
+  });
+  assert('Large bill: balanceOk', large.balanceOk);
+  assert('Large bill: sum == grandTotal',
+    large.personResults.reduce((s,r) => s + r.finalAmt,0) === large.grandTotal);
+
+  // Item with 1 assignee
+  const one = calculateSplit({
+    people: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }],
+    items: [
+      { id: 'i1', price: 30000, qty: 1, assignees: ['a'] },
+      { id: 'i2', price: 20000, qty: 1, assignees: ['b'] }
+    ],
+    charges: { servicePct: 0, taxPct: 0, discount: { mode: 'none', value: 0 } }
+  });
+  assert('Solo items: A=30000, B=20000',
+    one.personResults[0].finalAmt === 30000 && one.personResults[1].finalAmt === 20000);
+  assert('Solo items: balanceOk', one.balanceOk);
+
+  console.log(`─── ${pass} passed, ${fail} failed ───`);
+  console.groupEnd();
+}
+
+/* ─── Init ──────────────────────────────────────────────────────── */
+loadState();
+render();
+
+// Sync charges inputs from loaded state
+const { servicePct, taxPct } = state.charges;
+document.getElementById('inputService').value = servicePct;
+document.getElementById('inputTax').value     = taxPct;
+if (state.charges.discount.mode !== 'none') {
+  document.getElementById('inputDiscount').value = state.charges.discount.value;
+}
+
+if (new URLSearchParams(window.location.search).get('test') === '1') {
+  runSelfTests();
+}
+</script>
+</body>
+</html>
